@@ -1,23 +1,53 @@
 package com.example.pawvet_1.ui.screens.servicios
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.pawvet_1.ui.viewmodel.ServicioViewModel
+import androidx.compose.ui.unit.sp
+import com.example.pawvet_1.ui.components.PawVetBaseScreen
+import com.example.pawvet_1.ui.screens.citas.PremiumFormSection
+import com.example.pawvet_1.ui.theme.BlobBlue
+import com.example.pawvet_1.ui.theme.BlobCoral
+import com.example.pawvet_1.ui.theme.BlobGreen
+import com.example.pawvet_1.ui.theme.BlobYellow
+import com.example.pawvet_1.ui.theme.PawVetPrimary
+import com.example.pawvet_1.ui.theme.PawVetTextPrimary
 import com.example.pawvet_1.ui.viewmodel.MascotaViewModel
+import com.example.pawvet_1.ui.viewmodel.ServicioViewModel
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ServicioFormScreen(
     viewModel: ServicioViewModel,
@@ -26,193 +56,163 @@ fun ServicioFormScreen(
 ) {
     val mascotaState by mascotaViewModel.uiState.collectAsState()
 
-    // Estados del formulario
     var selectedMascotaId by remember { mutableStateOf<Int?>(null) }
     var selectedTipo by remember { mutableStateOf("Baño y Corte") }
     var selectedFechaMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
 
-    // Control de diálogos y menús
     var showDatePicker by remember { mutableStateOf(false) }
     var expandedMascotas by remember { mutableStateOf(false) }
     var expandedTipos by remember { mutableStateOf(false) }
 
     val tiposServicio = listOf("Baño y Corte", "Limpieza Dental", "Corte de Uñas", "Baño Medicado", "Spa Completo")
-    val dateFormatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    val dateFormatter = SimpleDateFormat("EEEE, dd MMMM", Locale("es", "ES"))
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Agendar Estética") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar")
-                    }
-                }
-            )
-        }
-    ) { padding ->
+    PawVetBaseScreen(
+        title = "Reserva Estética",
+        onBack = onBack
+    ) {
         Column(
             modifier = Modifier
-                .padding(padding)
-                .padding(16.dp)
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 110.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            // 1. Card de Paciente
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Favorite, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Paciente", style = MaterialTheme.typography.titleSmall)
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    
-                    ExposedDropdownMenuBox(
-                        expanded = expandedMascotas,
-                        onExpandedChange = { expandedMascotas = !expandedMascotas }
-                    ) {
-                        val mascotaSeleccionada = mascotaState.listaMascotas.find { it.id == selectedMascotaId }
-                        OutlinedTextField(
-                            value = mascotaSeleccionada?.nombre ?: "Seleccionar Mascota",
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("Mascota") },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedMascotas) },
-                            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
-                            shape = MaterialTheme.shapes.medium
+            PremiumFormSection(title = "Paciente", icon = Icons.Default.Favorite, iconBg = BlobBlue) {
+                ExposedDropdownMenuBox(
+                    expanded = expandedMascotas,
+                    onExpandedChange = { expandedMascotas = !expandedMascotas }
+                ) {
+                    val mascota = mascotaState.listaMascotas.find { it.id == selectedMascotaId }
+                    OutlinedTextField(
+                        value = mascota?.nombre ?: "Selecciona tu mascota",
+                        onValueChange = {},
+                        readOnly = true,
+                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expandedMascotas) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = PawVetPrimary,
+                            unfocusedBorderColor = Color.LightGray.copy(alpha = 0.5f)
                         )
-                        ExposedDropdownMenu(
-                            expanded = expandedMascotas,
-                            onDismissRequest = { expandedMascotas = false }
-                        ) {
-                            if (mascotaState.listaMascotas.isEmpty()) {
-                                DropdownMenuItem(
-                                    text = { Text("No hay mascotas registradas") },
-                                    onClick = { expandedMascotas = false }
-                                )
-                            } else {
-                                mascotaState.listaMascotas.forEach { mascota ->
-                                    DropdownMenuItem(
-                                        text = { Text("${mascota.nombre} (${mascota.raza})") },
-                                        onClick = {
-                                            selectedMascotaId = mascota.id
-                                            expandedMascotas = false
-                                        }
-                                    )
+                    )
+                    ExposedDropdownMenu(expanded = expandedMascotas, onDismissRequest = { expandedMascotas = false }) {
+                        mascotaState.listaMascotas.forEach { mascota ->
+                            DropdownMenuItem(
+                                text = { Text("${mascota.nombre} (${mascota.raza})") },
+                                onClick = {
+                                    selectedMascotaId = mascota.id
+                                    expandedMascotas = false
                                 }
-                            }
+                            )
                         }
                     }
                 }
             }
 
-            // 2. Card de Tipo de Servicio
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Star, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Servicio solicitado", style = MaterialTheme.typography.titleSmall)
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    ExposedDropdownMenuBox(
-                        expanded = expandedTipos,
-                        onExpandedChange = { expandedTipos = !expandedTipos }
-                    ) {
-                        OutlinedTextField(
-                            value = selectedTipo,
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("Tipo de Servicio") },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedTipos) },
-                            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
-                            shape = MaterialTheme.shapes.medium
+            PremiumFormSection(title = "Servicio", icon = Icons.Default.Star, iconBg = BlobGreen) {
+                ExposedDropdownMenuBox(
+                    expanded = expandedTipos,
+                    onExpandedChange = { expandedTipos = !expandedTipos }
+                ) {
+                    OutlinedTextField(
+                        value = selectedTipo,
+                        onValueChange = {},
+                        readOnly = true,
+                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expandedTipos) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = PawVetPrimary,
+                            unfocusedBorderColor = Color.LightGray.copy(alpha = 0.5f)
                         )
-                        ExposedDropdownMenu(
-                            expanded = expandedTipos,
-                            onDismissRequest = { expandedTipos = false }
-                        ) {
-                            tiposServicio.forEach { tipo ->
-                                DropdownMenuItem(
-                                    text = { Text(tipo) },
-                                    onClick = {
-                                        selectedTipo = tipo
-                                        expandedTipos = false
-                                    }
-                                )
-                            }
+                    )
+                    ExposedDropdownMenu(expanded = expandedTipos, onDismissRequest = { expandedTipos = false }) {
+                        tiposServicio.forEach { tipo ->
+                            DropdownMenuItem(
+                                text = { Text(tipo) },
+                                onClick = {
+                                    selectedTipo = tipo
+                                    expandedTipos = false
+                                }
+                            )
                         }
                     }
                 }
             }
 
-            // 3. Card de Fecha
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.DateRange, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Fecha sugerida", style = MaterialTheme.typography.titleSmall)
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-
+            PremiumFormSection(title = "Fecha sugerida", icon = Icons.Default.DateRange, iconBg = BlobYellow) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showDatePicker = true },
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White,
+                    border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f))
+                ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = dateFormatter.format(Date(selectedFechaMillis)),
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Bold
+                            text = dateFormatter.format(Date(selectedFechaMillis)).replaceFirstChar { it.uppercase() },
+                            color = PawVetTextPrimary,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.weight(1f)
                         )
-                        Button(onClick = { showDatePicker = true }) {
-                            Icon(Icons.Default.DateRange, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text("Cambiar")
-                        }
+                        Text(
+                            text = "Cambiar",
+                            color = PawVetPrimary,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            PremiumFormSection(title = "Disponibilidad", icon = Icons.Default.Check, iconBg = BlobCoral) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    listOf("Express", "Estándar", "Premium").forEach { slot ->
+                        FilterChip(
+                            selected = selectedTipo.contains(slot, ignoreCase = true),
+                            onClick = { },
+                            label = { Text(slot) },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = FilterChipDefaults.filterChipColors(
+                                containerColor = Color.White,
+                                selectedContainerColor = PawVetPrimary.copy(alpha = 0.12f),
+                                selectedLabelColor = PawVetPrimary
+                            )
+                        )
+                    }
+                }
+            }
 
-            // Botón de Confirmación
             Button(
                 onClick = {
                     selectedMascotaId?.let { idMascota ->
                         viewModel.guardarServicio(
                             mascotaId = idMascota,
                             tipo = selectedTipo,
-                            fecha = dateFormatter.format(Date(selectedFechaMillis))
+                            fecha = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(selectedFechaMillis))
                         )
                         onBack()
                     }
                 },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp),
                 enabled = selectedMascotaId != null && selectedTipo.isNotBlank(),
-                shape = MaterialTheme.shapes.large
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = PawVetPrimary)
             ) {
-                Icon(Icons.Default.Check, contentDescription = null)
-                Spacer(Modifier.width(12.dp))
-                Text("Confirmar Cita Estética", style = MaterialTheme.typography.titleMedium)
+                Text("Confirmar cita estética", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
             }
         }
     }
 
-    // Diálogo del DatePicker
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(initialSelectedDateMillis = selectedFechaMillis)
         DatePickerDialog(
@@ -221,10 +221,7 @@ fun ServicioFormScreen(
                 TextButton(onClick = {
                     selectedFechaMillis = datePickerState.selectedDateMillis ?: selectedFechaMillis
                     showDatePicker = false
-                }) { Text("Confirmar") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") }
+                }) { Text("Aceptar", color = PawVetPrimary, fontWeight = FontWeight.Bold) }
             }
         ) {
             DatePicker(state = datePickerState)

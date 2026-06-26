@@ -1,16 +1,29 @@
 package com.example.pawvet_1.ui.screens.mascotas
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -18,13 +31,14 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.pawvet_1.ui.components.PawVetBaseScreen
+import com.example.pawvet_1.ui.screens.citas.PremiumFormSection
+import com.example.pawvet_1.ui.theme.BlobBlue
+import com.example.pawvet_1.ui.theme.BlobCoral
+import com.example.pawvet_1.ui.theme.BlobGreen
+import com.example.pawvet_1.ui.theme.BlobYellow
+import com.example.pawvet_1.ui.theme.PawVetPrimary
 import com.example.pawvet_1.ui.viewmodel.MascotaViewModel
 
-/**
- * [VISTA - FORMULARIO]
- * - COMPOSABLES: Card, Column, OutlinedTextField.
- * - ORGANIZACIÓN: VerticalScroll para que no se corte en pantallas chicas.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MascotaFormScreen(
@@ -32,10 +46,8 @@ fun MascotaFormScreen(
     viewModel: MascotaViewModel,
     onBack: () -> Unit
 ) {
-    // - OBSERVACIÓN: Escuchamos al ViewModel. Si el estado cambia, la UI se RECOMPONE.
     val uiState by viewModel.uiState.collectAsState()
-    
-    // - ESTADO LOCAL: Variables temporales para lo que el usuario escribe.
+
     var nombre by remember { mutableStateOf("") }
     var tipo by remember { mutableStateOf("Perro") }
     var raza by remember { mutableStateOf("") }
@@ -49,11 +61,7 @@ fun MascotaFormScreen(
     var expandedRaza by remember { mutableStateOf(false) }
 
     LaunchedEffect(mascotaId) {
-        if (mascotaId > 0) {
-            viewModel.seleccionarMascota(mascotaId)
-        } else {
-            viewModel.resetSeleccion()
-        }
+        if (mascotaId > 0) viewModel.seleccionarMascota(mascotaId) else viewModel.resetSeleccion()
     }
 
     LaunchedEffect(uiState.mascotaSeleccionada) {
@@ -73,25 +81,16 @@ fun MascotaFormScreen(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 110.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    OutlinedTextField(
+            PremiumFormSection(title = "Información básica", icon = Icons.Default.Face, iconBg = BlobBlue) {
+                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    PremiumInput(
                         value = nombre,
                         onValueChange = { nombre = it },
-                        label = { Text("Nombre de la mascota") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        leadingIcon = { Icon(Icons.Default.Face, contentDescription = null) }
+                        label = "Nombre de la mascota"
                     )
 
                     ExposedDropdownMenuBox(
@@ -102,20 +101,19 @@ fun MascotaFormScreen(
                             value = tipo,
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("¿Qué es?") },
+                            label = { Text("Tipo") },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedTipo) },
-                            leadingIcon = { Icon(Icons.Default.Info, contentDescription = null) },
                             modifier = Modifier.menuAnchor().fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
+                            shape = RoundedCornerShape(16.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = PawVetPrimary,
+                                unfocusedBorderColor = Color.LightGray.copy(alpha = 0.5f)
+                            )
                         )
-                        ExposedDropdownMenu(
-                            expanded = expandedTipo,
-                            onDismissRequest = { expandedTipo = false }
-                        ) {
+                        ExposedDropdownMenu(expanded = expandedTipo, onDismissRequest = { expandedTipo = false }) {
                             tiposMascota.forEach { item ->
                                 DropdownMenuItem(
-                                    text = { Text(text = item) },
+                                    text = { Text(item) },
                                     onClick = {
                                         tipo = item
                                         expandedTipo = false
@@ -124,61 +122,70 @@ fun MascotaFormScreen(
                             }
                         }
                     }
+                }
+            }
 
-                    ExposedDropdownMenuBox(
-                        expanded = expandedRaza,
-                        onExpandedChange = { expandedRaza = !expandedRaza }
-                    ) {
-                        OutlinedTextField(
-                            value = raza,
-                            onValueChange = { raza = it },
-                            label = { Text("Raza") },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedRaza) },
-                            leadingIcon = { Icon(Icons.Default.Star, contentDescription = null) },
-                            modifier = Modifier.menuAnchor().fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
+            PremiumFormSection(title = "Perfil de raza", icon = Icons.Default.Star, iconBg = BlobGreen) {
+                ExposedDropdownMenuBox(
+                    expanded = expandedRaza,
+                    onExpandedChange = { expandedRaza = !expandedRaza }
+                ) {
+                    OutlinedTextField(
+                        value = raza,
+                        onValueChange = { raza = it },
+                        label = { Text("Raza") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedRaza) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = PawVetPrimary,
+                            unfocusedBorderColor = Color.LightGray.copy(alpha = 0.5f)
                         )
-                        ExposedDropdownMenu(
-                            expanded = expandedRaza,
-                            onDismissRequest = { expandedRaza = false }
-                        ) {
-                            razasComunes.forEach { item ->
-                                DropdownMenuItem(
-                                    text = { Text(text = item) },
-                                    onClick = {
-                                        raza = item
-                                        expandedRaza = false
-                                    }
-                                )
-                            }
+                    )
+                    ExposedDropdownMenu(expanded = expandedRaza, onDismissRequest = { expandedRaza = false }) {
+                        razasComunes.forEach { item ->
+                            DropdownMenuItem(
+                                text = { Text(item) },
+                                onClick = {
+                                    raza = item
+                                    expandedRaza = false
+                                }
+                            )
                         }
-                    }
-
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        OutlinedTextField(
-                            value = edad,
-                            onValueChange = { if (it.all { char -> char.isDigit() }) edad = it },
-                            label = { Text("Edad") },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            suffix = { Text("años") }
-                        )
-                        OutlinedTextField(
-                            value = peso,
-                            onValueChange = { peso = it },
-                            label = { Text("Peso") },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            suffix = { Text("kg") }
-                        )
                     }
                 }
             }
-            
-            // - ACCIÓN: Al pulsar, enviamos los datos al ViewModel.
+
+            PremiumFormSection(title = "Datos clínicos", icon = Icons.Default.Info, iconBg = BlobYellow) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    PremiumInput(
+                        value = edad,
+                        onValueChange = { if (it.all(Char::isDigit)) edad = it },
+                        label = "Edad",
+                        modifier = Modifier.weight(1f),
+                        keyboardType = KeyboardType.Number
+                    )
+                    PremiumInput(
+                        value = peso,
+                        onValueChange = { peso = it },
+                        label = "Peso",
+                        modifier = Modifier.weight(1f),
+                        keyboardType = KeyboardType.Decimal
+                    )
+                }
+            }
+
+            PremiumFormSection(title = "Resumen", icon = Icons.Default.DateRange, iconBg = BlobCoral) {
+                Text(
+                    text = "Completa estos datos para personalizar mejor citas, cuidados y recomendaciones.",
+                    color = Color.Gray,
+                    fontSize = 14.sp
+                )
+            }
+
             Button(
                 onClick = {
                     viewModel.guardarMascota(
@@ -193,19 +200,39 @@ fun MascotaFormScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp),
+                    .height(60.dp),
+                shape = RoundedCornerShape(18.dp),
                 enabled = nombre.isNotBlank() && raza.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                colors = ButtonDefaults.buttonColors(containerColor = PawVetPrimary)
             ) {
-                Icon(Icons.Default.Check, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = if (mascotaId > 0) "Guardar Cambios" else "Registrar Mascota",
-                    fontWeight = FontWeight.Bold,
+                    text = if (mascotaId > 0) "Guardar cambios" else "Registrar mascota",
+                    fontWeight = FontWeight.ExtraBold,
                     fontSize = 16.sp
                 )
             }
         }
     }
+}
+
+@Composable
+private fun PremiumInput(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    keyboardType: KeyboardType = KeyboardType.Text
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = PawVetPrimary,
+            unfocusedBorderColor = Color.LightGray.copy(alpha = 0.5f)
+        )
+    )
 }

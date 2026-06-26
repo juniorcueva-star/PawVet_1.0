@@ -596,7 +596,7 @@ private fun ServiceCard(service: ServiceItem) {
                     }
                 }
 
-                Spacer(Modifier.height(22.dp))
+                Spacer(Modifier.weight(1f))
 
                 Column(modifier = Modifier.fillMaxWidth(0.82f)) {
                     Text(
@@ -646,6 +646,8 @@ private fun ServiceCard(service: ServiceItem) {
                         }
                     }
                 }
+
+                Spacer(Modifier.weight(0.55f))
             }
         }
     }

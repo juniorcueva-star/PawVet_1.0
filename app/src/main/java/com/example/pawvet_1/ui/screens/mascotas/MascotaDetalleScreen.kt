@@ -1,11 +1,28 @@
 package com.example.pawvet_1.ui.screens.mascotas
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -18,12 +35,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.pawvet_1.ui.components.PawVetBaseScreen
+import com.example.pawvet_1.ui.theme.PawVetBorder
+import com.example.pawvet_1.ui.theme.PawVetPrimary
+import com.example.pawvet_1.ui.theme.PawVetSurface
+import com.example.pawvet_1.ui.theme.PawVetTextPrimary
+import com.example.pawvet_1.ui.theme.PawVetTextSecondary
 import com.example.pawvet_1.ui.viewmodel.MascotaViewModel
 
-/**
- * PANTALLA DE DETALLE: Muestra la información completa de una mascota.
- * Recibe el ID de la mascota a través de la navegación.
- */
 @Composable
 fun MascotaDetalleScreen(
     mascotaId: Int,
@@ -32,7 +50,6 @@ fun MascotaDetalleScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // Efecto de lanzamiento: Carga los datos de la mascota al entrar a la pantalla
     LaunchedEffect(mascotaId) {
         viewModel.seleccionarMascota(mascotaId)
     }
@@ -42,60 +59,82 @@ fun MascotaDetalleScreen(
         onBack = onBack
     ) {
         val mascota = uiState.mascotaSeleccionada
-        
+
         if (mascota != null) {
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 110.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Cabecera con Nombre
+                Surface(
+                    modifier = Modifier.size(104.dp),
+                    shape = CircleShape,
+                    color = PawVetSurface,
+                    border = BorderStroke(1.dp, PawVetBorder.copy(alpha = 0.8f)),
+                    shadowElevation = 10.dp
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(text = if (mascota.tipo.lowercase().contains("gato")) "🐱" else "🐶", fontSize = 44.sp)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(18.dp))
+
                 Text(
                     text = mascota.nombre,
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = PawVetTextPrimary
                 )
                 Text(
                     text = mascota.tipo,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.secondary
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = PawVetTextSecondary
                 )
-                
+
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Tarjeta de Información Detallada
-                Card(
+                Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    shape = RoundedCornerShape(28.dp),
+                    color = PawVetSurface,
+                    border = BorderStroke(1.dp, PawVetBorder.copy(alpha = 0.8f)),
+                    shadowElevation = 8.dp
                 ) {
                     Column(
-                        modifier = Modifier.padding(24.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        modifier = Modifier.padding(22.dp),
+                        verticalArrangement = Arrangement.spacedBy(18.dp)
                     ) {
-                        InfoRow(icon = Icons.Default.Star, label = "Raza", value = mascota.raza)
-                        InfoRow(icon = Icons.Default.DateRange, label = "Edad", value = "${mascota.edad} años")
-                        InfoRow(icon = Icons.Default.Info, label = "Peso", value = "${mascota.peso} kg")
+                        DetailRow(icon = Icons.Default.Star, label = "Raza", value = mascota.raza)
+                        DetailRow(icon = Icons.Default.DateRange, label = "Edad", value = "${mascota.edad} años")
+                        DetailRow(icon = Icons.Default.Info, label = "Peso", value = "${mascota.peso} kg")
                     }
                 }
             }
         } else {
-            // Estado de carga si aún no se recupera la mascota de Room
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+                CircularProgressIndicator(color = PawVetPrimary)
             }
         }
     }
 }
 
 @Composable
-fun InfoRow(icon: ImageVector, label: String, value: String) {
+private fun DetailRow(icon: ImageVector, label: String, value: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-        Spacer(modifier = Modifier.width(12.dp))
+        Box(
+            modifier = Modifier
+                .size(42.dp)
+                .background(PawVetPrimary.copy(alpha = 0.10f), RoundedCornerShape(14.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, contentDescription = null, tint = PawVetPrimary)
+        }
+        Spacer(modifier = Modifier.size(12.dp))
         Column {
-            Text(text = label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary)
-            Text(text = value, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+            Text(text = label, style = MaterialTheme.typography.labelMedium, color = PawVetTextSecondary)
+            Text(text = value, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = PawVetTextPrimary)
         }
     }
 }
