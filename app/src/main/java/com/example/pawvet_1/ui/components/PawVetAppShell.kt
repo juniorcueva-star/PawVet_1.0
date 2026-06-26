@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -21,34 +20,40 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.pawvet_1.data.session.SessionManager
 import com.example.pawvet_1.navigation.PawVetNavGraph
 import com.example.pawvet_1.navigation.Screen
-import com.example.pawvet_1.ui.theme.PawVetAccent
+import com.example.pawvet_1.ui.screens.login.LoginScreen
+import com.example.pawvet_1.ui.screens.register.RegisterScreen
 import com.example.pawvet_1.ui.theme.PawVetBackground
 import com.example.pawvet_1.ui.theme.PawVetBodyFont
 import com.example.pawvet_1.ui.theme.PawVetBorder
 import com.example.pawvet_1.ui.theme.PawVetCoralGlow
 import com.example.pawvet_1.ui.theme.PawVetPrimary
 import com.example.pawvet_1.ui.theme.PawVetTextSecondary
-import com.example.pawvet_1.ui.theme.PawVetTextPrimary
 
 private data class NavHudItem(
     val label: String,
@@ -61,13 +66,53 @@ private data class NavHudItem(
 fun PawVetAppShell(
     navController: NavHostController
 ) {
+    val context = LocalContext.current
+    val sessionManager = remember { SessionManager(context.applicationContext) }
+    val sessionState by sessionManager.sessionState.collectAsState()
+    var authScreen by rememberSaveable { mutableStateOf(AuthScreen.Login.name) }
+    var authError by rememberSaveable { mutableStateOf<String?>(null) }
+
+    if (!sessionState.isLoggedIn) {
+        PawVetAmbientBackground()
+        when (AuthScreen.valueOf(authScreen)) {
+            AuthScreen.Login -> LoginScreen(
+                onLoginClick = { email, password ->
+                    val result = sessionManager.login(email, password)
+                    authError = if (result.success) null else result.message
+                },
+                onRegisterClick = {
+                    authError = null
+                    authScreen = AuthScreen.Register.name
+                },
+                errorMessage = authError
+            )
+
+            AuthScreen.Register -> RegisterScreen(
+                onRegisterClick = { name, email, password ->
+                    val result = sessionManager.register(name, email, password)
+                    authError = if (result.success) null else result.message
+                },
+                onBackToLogin = {
+                    authError = null
+                    authScreen = AuthScreen.Login.name
+                },
+                errorMessage = authError
+            )
+        }
+        return
+    }
+
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
     val items = listOf(
         NavHudItem(
             label = "Inicio",
-            selected = { destination -> destination.isOnRoute(Screen.Home.route) || destination.isOnRoute(Screen.Servicios.route) || destination.isOnRoute(Screen.ServicioForm.route) },
+            selected = { destination ->
+                destination.isOnRoute(Screen.Home.route) ||
+                    destination.isOnRoute(Screen.Servicios.route) ||
+                    destination.isOnRoute("servicio_form")
+            },
             onClick = {
                 navController.navigate(Screen.Home.route) {
                     popUpTo(Screen.Home.route) { saveState = true }
@@ -76,11 +121,18 @@ fun PawVetAppShell(
                 }
             }
         ) { selected ->
-            Icon(Icons.Default.Home, contentDescription = null, tint = if (selected) PawVetPrimary else PawVetTextSecondary, modifier = Modifier.size(19.dp))
+            Icon(
+                Icons.Default.Home,
+                contentDescription = null,
+                tint = if (selected) PawVetPrimary else PawVetTextSecondary,
+                modifier = Modifier.size(19.dp)
+            )
         },
         NavHudItem(
             label = "Citas",
-            selected = { destination -> destination.isOnRoute(Screen.Citas.route) || destination.isOnRoute("cita_form") },
+            selected = { destination ->
+                destination.isOnRoute(Screen.Citas.route) || destination.isOnRoute("cita_form")
+            },
             onClick = {
                 navController.navigate(Screen.Citas.route) {
                     launchSingleTop = true
@@ -88,7 +140,12 @@ fun PawVetAppShell(
                 }
             }
         ) { selected ->
-            Icon(Icons.Default.DateRange, contentDescription = null, tint = if (selected) PawVetPrimary else PawVetTextSecondary, modifier = Modifier.size(19.dp))
+            Icon(
+                Icons.Default.DateRange,
+                contentDescription = null,
+                tint = if (selected) PawVetPrimary else PawVetTextSecondary,
+                modifier = Modifier.size(19.dp)
+            )
         },
         NavHudItem(
             label = "Chat IA",
@@ -100,7 +157,12 @@ fun PawVetAppShell(
                 }
             }
         ) { selected ->
-            Icon(Icons.Default.Email, contentDescription = null, tint = if (selected) PawVetPrimary else PawVetTextSecondary, modifier = Modifier.size(19.dp))
+            Icon(
+                Icons.Default.Email,
+                contentDescription = null,
+                tint = if (selected) PawVetPrimary else PawVetTextSecondary,
+                modifier = Modifier.size(19.dp)
+            )
         },
         NavHudItem(
             label = "Perfil",
@@ -112,7 +174,12 @@ fun PawVetAppShell(
                 }
             }
         ) { selected ->
-            Icon(Icons.Default.Person, contentDescription = null, tint = if (selected) PawVetPrimary else PawVetTextSecondary, modifier = Modifier.size(19.dp))
+            Icon(
+                Icons.Default.Person,
+                contentDescription = null,
+                tint = if (selected) PawVetPrimary else PawVetTextSecondary,
+                modifier = Modifier.size(19.dp)
+            )
         }
     )
 
@@ -132,7 +199,18 @@ fun PawVetAppShell(
         ) {
             PawVetAmbientBackground()
             Box(modifier = Modifier.padding(innerPadding)) {
-                PawVetNavGraph(navController = navController)
+                PawVetNavGraph(
+                    navController = navController,
+                    currentUserName = sessionState.userName,
+                    onLogout = {
+                        sessionManager.logout()
+                        authScreen = AuthScreen.Login.name
+                        authError = null
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(navController.graph.id) { inclusive = true }
+                        }
+                    }
+                )
             }
         }
     }
@@ -232,4 +310,9 @@ private fun NavDestination?.isOnRoute(prefix: String): Boolean {
     return this?.hierarchy?.any { destination ->
         destination.route?.startsWith(prefix) == true
     } == true
+}
+
+private enum class AuthScreen {
+    Login,
+    Register
 }

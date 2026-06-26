@@ -22,6 +22,8 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -41,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.pawvet_1.data.model.Cita
 import com.example.pawvet_1.data.model.Mascota
+import com.example.pawvet_1.data.model.Servicio
 import com.example.pawvet_1.ui.components.PawVetBaseScreen
 import com.example.pawvet_1.ui.theme.PawVetAccent
 import com.example.pawvet_1.ui.theme.PawVetBorder
@@ -50,12 +53,16 @@ import com.example.pawvet_1.ui.theme.PawVetTextPrimary
 import com.example.pawvet_1.ui.theme.PawVetTextSecondary
 import com.example.pawvet_1.ui.viewmodel.CitaViewModel
 import com.example.pawvet_1.ui.viewmodel.MascotaViewModel
+import com.example.pawvet_1.ui.viewmodel.ServicioViewModel
 
 @Composable
 fun PerfilScreen(
+    userName: String,
     mascotaViewModel: MascotaViewModel,
     citaViewModel: CitaViewModel,
+    servicioViewModel: ServicioViewModel,
     onBack: () -> Unit,
+    onLogout: () -> Unit,
     onMascotaClick: (Int) -> Unit,
     onAddMascotaClick: () -> Unit,
     onEditMascotaClick: (Int) -> Unit,
@@ -63,6 +70,7 @@ fun PerfilScreen(
 ) {
     val mascotaState by mascotaViewModel.uiState.collectAsState()
     val citaState by citaViewModel.uiState.collectAsState()
+    val servicioState by servicioViewModel.uiState.collectAsState()
 
     PawVetBaseScreen(
         title = "Mi Perfil",
@@ -90,7 +98,7 @@ fun PerfilScreen(
             }
 
             Text(
-                text = "Administrador PawVet",
+                text = userName.ifBlank { "Cuenta PawVet" },
                 style = MaterialTheme.typography.titleLarge,
                 color = PawVetTextPrimary,
                 modifier = Modifier.padding(top = 16.dp)
@@ -100,8 +108,19 @@ fun PerfilScreen(
                 style = MaterialTheme.typography.bodyMedium,
                 color = PawVetTextSecondary,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 6.dp, bottom = 26.dp)
+                modifier = Modifier.padding(top = 6.dp, bottom = 18.dp)
             )
+
+            Button(
+                onClick = onLogout,
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = PawVetAccent.copy(alpha = 0.9f))
+            ) {
+                Icon(Icons.Default.ExitToApp, contentDescription = null)
+                Text("Cerrar sesión", modifier = Modifier.padding(start = 8.dp))
+            }
+
+            Spacer(modifier = Modifier.height(22.dp))
 
             SectionHeader(
                 title = "Mis Mascotas",
@@ -124,13 +143,27 @@ fun PerfilScreen(
 
             SectionHeader(title = "Próximas Citas")
             if (citaState.listaCitas.isEmpty()) {
-                EmptyStateCard("No hay citas programadas.")
+                EmptyStateCard("No hay citas médicas programadas.")
             } else {
                 citaState.listaCitas.forEach { cita ->
                     CitaItem(
                         cita = cita,
                         onEdit = { onEditCitaClick(cita.id) },
                         onDelete = { citaViewModel.eliminarCita(cita) }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            SectionHeader(title = "Reservas Estéticas")
+            if (servicioState.listaServicios.isEmpty()) {
+                EmptyStateCard("No hay reservas estéticas programadas.")
+            } else {
+                servicioState.listaServicios.forEach { servicio ->
+                    ServicioItem(
+                        servicio = servicio,
+                        onDelete = { servicioViewModel.eliminarServicio(servicio) }
                     )
                 }
             }
@@ -202,11 +235,7 @@ private fun MascotaItem(mascota: Mascota, onClick: () -> Unit, onEdit: () -> Uni
             modifier = Modifier.padding(18.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(50.dp),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(modifier = Modifier.size(50.dp), contentAlignment = Alignment.Center) {
                 Text(text = if (mascota.tipo.lowercase().contains("gato")) "🐱" else "🐶", fontSize = 28.sp)
             }
             Spacer(modifier = Modifier.size(14.dp))
@@ -239,10 +268,7 @@ private fun CitaItem(cita: Cita, onEdit: () -> Unit, onDelete: () -> Unit) {
             modifier = Modifier.padding(18.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier.size(50.dp),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(modifier = Modifier.size(50.dp), contentAlignment = Alignment.Center) {
                 Icon(Icons.Default.DateRange, contentDescription = null, tint = PawVetPrimary)
             }
             Spacer(modifier = Modifier.size(14.dp))
@@ -252,6 +278,36 @@ private fun CitaItem(cita: Cita, onEdit: () -> Unit, onDelete: () -> Unit) {
             }
             IconButton(onClick = onEdit) {
                 Icon(Icons.Default.Edit, contentDescription = null, tint = PawVetPrimary)
+            }
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.Delete, contentDescription = null, tint = PawVetAccent)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ServicioItem(servicio: Servicio, onDelete: () -> Unit) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        shape = RoundedCornerShape(26.dp),
+        color = PawVetSurface,
+        border = BorderStroke(1.dp, PawVetBorder.copy(alpha = 0.8f)),
+        shadowElevation = 8.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(18.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(modifier = Modifier.size(50.dp), contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.Star, contentDescription = null, tint = PawVetPrimary)
+            }
+            Spacer(modifier = Modifier.size(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = servicio.tipoServicio, style = MaterialTheme.typography.titleMedium, color = PawVetTextPrimary)
+                Text(text = "${servicio.fecha} · ${servicio.hora}", style = MaterialTheme.typography.bodyMedium, color = PawVetTextSecondary)
             }
             IconButton(onClick = onDelete) {
                 Icon(Icons.Default.Delete, contentDescription = null, tint = PawVetAccent)

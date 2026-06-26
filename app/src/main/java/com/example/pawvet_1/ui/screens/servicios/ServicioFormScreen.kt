@@ -4,6 +4,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,8 +21,22 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.*
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -47,28 +63,48 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ServicioFormScreen(
+    servicioId: Int,
     viewModel: ServicioViewModel,
     mascotaViewModel: MascotaViewModel,
     onBack: () -> Unit
 ) {
     val mascotaState by mascotaViewModel.uiState.collectAsState()
+    val servicioState by viewModel.uiState.collectAsState()
 
     var selectedMascotaId by remember { mutableStateOf<Int?>(null) }
     var selectedTipo by remember { mutableStateOf("Baño y Corte") }
     var selectedFechaMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    var selectedHora by remember { mutableStateOf("") }
 
     var showDatePicker by remember { mutableStateOf(false) }
     var expandedMascotas by remember { mutableStateOf(false) }
     var expandedTipos by remember { mutableStateOf(false) }
 
     val tiposServicio = listOf("Baño y Corte", "Limpieza Dental", "Corte de Uñas", "Baño Medicado", "Spa Completo")
+    val horarios = listOf("09:00 AM", "10:30 AM", "12:00 PM", "02:30 PM", "04:00 PM", "05:30 PM")
     val dateFormatter = SimpleDateFormat("EEEE, dd MMMM", Locale("es", "ES"))
 
+    LaunchedEffect(servicioId) {
+        if (servicioId > 0) {
+            viewModel.seleccionarServicio(servicioId)
+        } else {
+            viewModel.resetSeleccion()
+        }
+    }
+
+    LaunchedEffect(servicioState.servicioSeleccionado) {
+        servicioState.servicioSeleccionado?.let { servicio ->
+            selectedMascotaId = servicio.mascotaId
+            selectedTipo = servicio.tipoServicio
+            selectedHora = servicio.hora
+        }
+    }
+
     PawVetBaseScreen(
-        title = "Reserva Estética",
+        title = if (servicioId > 0) "Editar Reserva Estética" else "Reserva Estética",
         onBack = onBack
     ) {
         Column(
@@ -141,7 +177,7 @@ fun ServicioFormScreen(
                 }
             }
 
-            PremiumFormSection(title = "Fecha sugerida", icon = Icons.Default.DateRange, iconBg = BlobYellow) {
+            PremiumFormSection(title = "Fecha", icon = Icons.Default.DateRange, iconBg = BlobYellow) {
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -169,21 +205,27 @@ fun ServicioFormScreen(
                 }
             }
 
-            PremiumFormSection(title = "Disponibilidad", icon = Icons.Default.Check, iconBg = BlobCoral) {
-                Row(
+            PremiumFormSection(title = "Horario disponible", icon = Icons.Default.Check, iconBg = BlobCoral) {
+                FlowRow(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    listOf("Express", "Estándar", "Premium").forEach { slot ->
+                    horarios.forEach { hora ->
                         FilterChip(
-                            selected = selectedTipo.contains(slot, ignoreCase = true),
-                            onClick = { },
-                            label = { Text(slot) },
+                            selected = selectedHora == hora,
+                            onClick = { selectedHora = hora },
+                            label = { Text(hora, modifier = Modifier.padding(vertical = 4.dp)) },
                             shape = RoundedCornerShape(12.dp),
                             colors = FilterChipDefaults.filterChipColors(
-                                containerColor = Color.White,
-                                selectedContainerColor = PawVetPrimary.copy(alpha = 0.12f),
-                                selectedLabelColor = PawVetPrimary
+                                selectedContainerColor = PawVetPrimary,
+                                selectedLabelColor = Color.White,
+                                containerColor = Color.White
+                            ),
+                            border = FilterChipDefaults.filterChipBorder(
+                                borderColor = if (selectedHora == hora) PawVetPrimary else Color.LightGray.copy(alpha = 0.5f),
+                                enabled = true,
+                                selected = selectedHora == hora
                             )
                         )
                     }
@@ -194,9 +236,11 @@ fun ServicioFormScreen(
                 onClick = {
                     selectedMascotaId?.let { idMascota ->
                         viewModel.guardarServicio(
+                            id = servicioId,
                             mascotaId = idMascota,
                             tipo = selectedTipo,
-                            fecha = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(selectedFechaMillis))
+                            fecha = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(selectedFechaMillis)),
+                            hora = selectedHora
                         )
                         onBack()
                     }
@@ -204,11 +248,15 @@ fun ServicioFormScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(60.dp),
-                enabled = selectedMascotaId != null && selectedTipo.isNotBlank(),
+                enabled = selectedMascotaId != null && selectedTipo.isNotBlank() && selectedHora.isNotBlank(),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = PawVetPrimary)
             ) {
-                Text("Confirmar cita estética", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                Text(
+                    text = if (servicioId > 0) "Guardar reserva estética" else "Confirmar cita estética",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 16.sp
+                )
             }
         }
     }
@@ -221,7 +269,9 @@ fun ServicioFormScreen(
                 TextButton(onClick = {
                     selectedFechaMillis = datePickerState.selectedDateMillis ?: selectedFechaMillis
                     showDatePicker = false
-                }) { Text("Aceptar", color = PawVetPrimary, fontWeight = FontWeight.Bold) }
+                }) {
+                    Text("Aceptar", color = PawVetPrimary, fontWeight = FontWeight.Bold)
+                }
             }
         ) {
             DatePicker(state = datePickerState)

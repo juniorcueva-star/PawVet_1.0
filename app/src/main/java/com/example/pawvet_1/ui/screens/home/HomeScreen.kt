@@ -86,6 +86,7 @@ private data class ServiceItem(
 
 @Composable
 fun HomeScreen(
+    userName: String,
     onCitasClick: () -> Unit,
     onServiciosClick: () -> Unit,
     onConsultasClick: () -> Unit,
@@ -133,7 +134,10 @@ fun HomeScreen(
                 .padding(bottom = 108.dp)
         ) {
             AnimatedEntrance(delayMillis = 0) {
-                WelcomeHeader(onPerfilClick = onPerfilClick)
+                WelcomeHeader(
+                    userName = userName,
+                    onPerfilClick = onPerfilClick
+                )
             }
 
             Spacer(Modifier.height(28.dp))
@@ -172,7 +176,12 @@ private fun HeroHeadline() {
 }
 
 @Composable
-private fun WelcomeHeader(onPerfilClick: () -> Unit) {
+private fun WelcomeHeader(
+    userName: String,
+    onPerfilClick: () -> Unit
+) {
+    val displayName = userName.substringBefore(" ").ifBlank { "Junior" }
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -206,7 +215,7 @@ private fun WelcomeHeader(onPerfilClick: () -> Unit) {
 
             Column {
                 Text(
-                    text = "Buenos días, Lucía",
+                    text = "Buenos días, $displayName",
                     color = PawVetTextSecondary,
                     fontFamily = PawVetBodyFont,
                     fontWeight = FontWeight.Medium,
